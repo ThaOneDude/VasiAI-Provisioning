@@ -16,31 +16,20 @@ APT_PACKAGES=(
 PIP_PACKAGES=(
     #"package-1"
     #"package-2"
-    "onnxruntime"
-    "onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
-    #"insightface"
-       
-
 )
 
 NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
     "https://github.com/cubiq/ComfyUI_essentials"
-    "https://github.com/X-T-E-R/ComfyUI-EasyCivitai-XTNodes"
-    "https://github.com/civitai/civitai_comfy_nodes"
-    "https://github.com/thebill2001/comfyui-upscale-by-model"
-    #"https://github.com/SeargeDP/SeargeSDXL"
-    #"https://github.com/Gourieff/comfyui-reactor-node"
-    #"https://github.com/shiimizu/ComfyUI-PhotoMaker-Plus"
-    
 )
 
 CHECKPOINT_MODELS=(
-    #"https://civitai.com/api/download/models/755618?type=Model&format=SafeTensor&size=full&fp=fp16"
-    "https://civitai.com/api/download/models/479579?type=Model&format=SafeTensor&size=full&fp=bf16"
-    #"https://civitai.com/api/download/models/714889?type=Model&format=SafeTensor&size=pruned&fp=fp16"
-    "https://civitai.com/api/download/models/160240?type=Model&format=SafeTensor"
-    "https://civitai.com/api/download/models/157315?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+    "https://civitai.com/api/download/models/1908093?type=Model&format=SafeTensor&size=full&fp=fp8"
+)
+
+CLIP_MODELS=(
+    "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors"
+    "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors"
 )
 
 UNET_MODELS=(
@@ -48,11 +37,12 @@ UNET_MODELS=(
 )
 
 LORA_MODELS=(
-
+    #"https://civitai.com/api/download/models/16576"
+    "https://civitai.com/api/download/models/2019935?type=Model&format=SafeTensor"
 )
 
 VAE_MODELS=(
-    "https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/resolve/main/sdxl.vae.safetensors"
+    "https://civitai.com/api/download/models/887455?type=Model&format=SafeTensor"
 )
 
 ESRGAN_MODELS=(
@@ -64,7 +54,6 @@ CONTROLNET_MODELS=(
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
-
 function provisioning_start() {
     if [[ ! -d /opt/environments/python ]]; then 
         export MAMBA_BASE=true
@@ -72,27 +61,41 @@ function provisioning_start() {
     source /opt/ai-dock/etc/environment.sh
     source /opt/ai-dock/bin/venv-set.sh comfyui
 
+    # Get licensed models if HF_TOKEN set & valid
+    if provisioning_has_valid_hf_token; then
+        #UNET_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors")
+        VAE_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors")
+    else
+        #UNET_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors")
+        #VAE_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors")
+        #sed -i 's/flux1-dev\.safetensors/flux1-schnell.safetensors/g' /opt/ComfyUI/web/scripts/defaultGraph.js
+    fi
+
     provisioning_print_header
     provisioning_get_apt_packages
+    provisioning_get_default_workflow
     provisioning_get_nodes
     provisioning_get_pip_packages
     provisioning_get_models \
-        "${WORKSPACE}storage/stable_diffusion/models/ckpt" \
+        "${WORKSPACE}/storage/stable_diffusion/models/ckpt" \
         "${CHECKPOINT_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}storage/stable_diffusion/models/unet" \
+        "${WORKSPACE}/storage/stable_diffusion/models/unet" \
         "${UNET_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}storage/stable_diffusion/models/lora" \
+        "${WORKSPACE}/storage/stable_diffusion/models/lora" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}storage/stable_diffusion/models/controlnet" \
+        "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
         "${CONTROLNET_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}storage/stable_diffusion/models/vae" \
+        "${WORKSPACE}/storage/stable_diffusion/models/vae" \
         "${VAE_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}storage/stable_diffusion/models/esrgan" \
+        "${WORKSPACE}/storage/stable_diffusion/models/clip" \
+        "${CLIP_MODELS[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/esrgan" \
         "${ESRGAN_MODELS[@]}"
     provisioning_print_end
 }
